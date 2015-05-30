@@ -1,5 +1,11 @@
-#include "gridserver.h"
 #include <string>
+#include "gridserver.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fstream>
+#include <sstream>
+#include <signal.h>
+#include <sys/msg.h>
 
 void print_usage();
 void run_server();
@@ -8,6 +14,23 @@ Server::Server(int width, int height)
 	this->width = width;
 	this->height = height;
 	grid.resize(width * height);
+
+	int mkfifo(const char *path, mode_t mode);
+	if (mkfifo("../pipe", 0660) == -1) {
+		return;
+	}
+}
+
+void signal_handler(int sig)
+{
+switch (sig){
+	case SIGHUP:
+		break;
+	case SIGINT:
+		exit(EXIT_SUCCESS);
+	case SIGQUIT:
+		break;
+}
 }
 
 int main(int argc, char* argv[])
@@ -57,13 +80,27 @@ void print_usage()
 	return;
 }
 
+void Server::send_display(std::string message)
+{
+	std::ofstream out_pipe;
+	out_pipe.open("../pipe");
+	out_pipe << message;
+}
+
 void Server::run_server()
 {
+	int msgid;
 	std::cout << "RUN SERVER" << std::endl;
-	std::cout << "Width: " << width << std::endl << "Height: " << height << std::endl;
-	while(1==1){
-		
-	};
-	          return;
-          }
+	if( ( msgid = msgget(12345,0666|IPC_CREAT|IPC_EXCL ))==-1 ){
 
+	}
+	(void) signal(SIGHUP, signal_handler);
+	(void) signal(SIGINT, signal_handler);
+	(void) signal(SIGQUIT, signal_handler);
+	while (1==1){
+	
+	}
+
+	remove("../pipe");
+	return;
+}
