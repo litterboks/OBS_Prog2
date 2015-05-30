@@ -7,10 +7,15 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+    if(argc < 2)
+    {
+        return -1;
+    }
+
+
     char name = argv[1][0];
     char moving;
 
-    cin >> name;
     cout << "Registration OK" << endl;
     cout << name << endl;
     cout << "Enter Move: ";
