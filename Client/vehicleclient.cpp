@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int sending(char x, int msgid, int type);
+int sending(char text, int msgid, int type);
 void signal_handler(int sig)
 {
     if(sig == SIGTERM)
@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
 {
         if(argc < 2) //Wenn kein Wagenname eingegeben wurde
     {
+	    cout << "Usage!!" << endl;
         return -1;
     }
 
@@ -24,30 +25,32 @@ int main(int argc, char* argv[])
     char name = argv[1][0];
     char moving;
     int msgid = -1;	/* Message Queue ID */
-    int msgid2 = -1;
-    int vtype = 0;
-    int mtype = 1;
+//    int msgid2 = -1;
+    //int vtype = 0;
+    //int mtype = 1;
     int ret;
     int i;
 
     if (name <'A' || name > 'Z') //Wenn der Wagenname kein Großbuchstabe war
     {
+	cout << "Buchstabe zwischen A und Z bitte!" << endl;
         return -1;
     }
 
 
     if((msgid = msgget(KEY,PERM))==-1 ) //Message Queue erstellen
     {
+	cout << "Message Queue not found!" << endl;
         return -1;
       //return EXIT_FAILURE;
     }
 
-    if((msgid2 = msgget(KEY2, PERM)) == -1)
+    /*if((msgid2 = msgget(KEY2, PERM)) == -1)
     {
         return -1;
-    }
-
-    i = sending(name, msgid, vtype);
+    }*/
+//	cout << "MSGID: " << msgid << endl;
+    i = sending(name , msgid, 'R');
 
     if(i == -1)
     {
@@ -72,11 +75,11 @@ int main(int argc, char* argv[])
 
         switch(moving)
         {
-            case 'N' : //Queue schicken mit dem Move
+            case 'N' : 
             case 'O' :
             case 'S' :
             case 'W' :
-            case 'T' : ret = sending(moving, msgid, mtype); break;
+            case 'T' : ret = sending(name ,msgid, moving); break;
             default: cout << "Ungültiger Move" << endl;
         }
 
@@ -89,16 +92,17 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-int sending(char x, int messid, int type)
+int sending(char text, int msgid, int type)
 {
 
     //Nachricht verschicken
-    message_t msg;	/* Buffer fuer Message */
-   msg.mText = x;
+   message_t msg;	/* Buffer fuer Message */
+   msg.mText = text;
    msg.mType = type;
-   if (msgsnd(messid,&msg,sizeof(msg)-sizeof(long), 0) == -1) //Nachricht in Message Queue schreiben
+   if (msgsnd(msgid, &msg, sizeof(message_t)-sizeof(int) , 0) == -1) //Nachricht in Message Queue schreiben
    {
          //return EXIT_FAILURE;
+	 cout << errno <<endl;
          return -1;
    }
     return 0;
