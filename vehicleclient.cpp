@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-    cout << "Registration OK. Start position: " << w << "." << h << endl;
+    cout << "Registration OK. Start position: " << w << "." << h << "." << endl;
 
     while(/*Auto nicht geschrottet/ Signal != SIGTERM */)
     {
