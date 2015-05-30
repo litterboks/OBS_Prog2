@@ -1,12 +1,12 @@
-CC = gcc
-CFLAGS = -Wall -Werror -pedantic -std=gnu99
-EXECUTABLE = myfind
+CC = g++
+CFLAGS = -Wall -Werror -pedantic -std=c++11
+EXECUTABLE = gridserver
 
 ############################### 
 # Build
 ###############################
 
-all: myfind.c
+all: gridserver.cpp
 	${CC} ${CFLAGS} -o ${EXECUTABLE} $^
 
 ############################### 
