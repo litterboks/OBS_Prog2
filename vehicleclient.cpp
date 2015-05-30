@@ -14,6 +14,8 @@ int main(int argc, char* argv[])
 
     char name = argv[1][0];
     char moving;
+    int w = 0;
+    int h = 0;
 
 
 
@@ -22,10 +24,18 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    cout << "Registration OK" << endl;
-    cout << name << endl;
-    //while(/*Auto nicht geschrottet */)
-    //{
+    //Wagennamen schicken und registration überprüfen
+
+    if(/*registration nicht ok */)
+    {
+        return -1;
+    }
+    else
+    {
+    cout << "Registration OK. Start position: " << w << "." << h << endl;
+
+    while(/*Auto nicht geschrottet */)
+    {
         cout << "Enter Move: ";
         cin >> moving;
 
@@ -35,17 +45,17 @@ int main(int argc, char* argv[])
             case 'O' :
             case 'S' :
             case 'W' :
-            case 'T' :     cout << "The input was " << moving << endl;
+            case 'T' :     //cout << "The input was " << moving << endl;
                     break;
             default: cout << "Ungültiger Move" << endl;
                     break;
         }
 
         // ?? Überprüfung ob Auto geschrottet oder nicht
-  //  }
+    }
 
     cout << "Vehicle has been eliminated." << endl;
-
+    }
 
     return 0;
 }
