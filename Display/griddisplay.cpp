@@ -26,8 +26,10 @@ int main()
 
     while (1==1)
     {
-        Grid::Griddisplay();
+       int x =  Grid::Griddisplay();
 
+        if(x == -1)
+            return -1;
     }
 
 
@@ -35,7 +37,7 @@ int main()
     return 0;
 }
 
-void Grid::Griddisplay ()
+int Grid::Griddisplay ()
 {
    ifstream f;
    f.open("../pipe");
@@ -45,5 +47,7 @@ void Grid::Griddisplay ()
         cout << "Error with Signal" << endl;
         return -1;
     }
-    cout << f << endl;
+
+    cout << f.rdbuff() << endl;
+    return 0;
 }
