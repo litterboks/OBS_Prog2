@@ -26,15 +26,16 @@ int main(int argc, char* argv[])
 
     //Wagennamen schicken und registration überprüfen
 
-    if(/*registration nicht ok */)
+    if(/*keine Startposition erhalten */)
     {
+        cout << "Registration FAILED." << endl;
         return -1;
     }
     else
     {
     cout << "Registration OK. Start position: " << w << "." << h << endl;
 
-    while(/*Auto nicht geschrottet */)
+    while(/*Auto nicht geschrottet/ Signal != SIGTERM */)
     {
         cout << "Enter Move: ";
         cin >> moving;
