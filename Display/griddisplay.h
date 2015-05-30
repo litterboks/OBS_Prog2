@@ -6,9 +6,9 @@ using namespace std;
 class Display
 {
 public:
-    Display(); //?
-    ~Display();
-    void Griddisplay();
+   // Display(); //?
+   // ~Display();
+   int Griddisplay();
 
 };
 
