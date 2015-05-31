@@ -100,12 +100,7 @@ void Server::send_display(std::string message)
 	out_pipe << message;
 }
 
-int Server::regVehicle(char name)
-{
-	return 0;
-}
-
-int Server::sendMsg(char text, int msgid, int type)
+int Server::sendMsg(int text, int msgid, long type)
 {
 	//Nachricht verschicken
 	message_t msg;  /* Buffer fuer Message */
@@ -118,6 +113,35 @@ int Server::sendMsg(char text, int msgid, int type)
 	}
 	return 0;
 
+}
+
+int Server::placeVehicle(char name, int pid)
+{
+	if (registeredVehicles.count(name) == 0) {
+		registeredVehicles[name]=pid;
+		for (unsigned int i = 0; i < grid.size(); i++) {
+			if (grid[i] == ' ') {
+				grid[i] = name;
+				break;
+			}
+			std::cout << "Not in Grid -> SUCCESS" << std::endl;
+			return 0;
+		}
+	}
+		return -1;
+}
+
+int Server::regVehicle(char name, int pid)
+{
+	int ret = 0;
+	if ((ret = placeVehicle(name, pid) == 0)) {
+		std::cout << "Registered Vehicle: " << name << "  PID: " << registeredVehicles[name] << std::endl;
+		sendMsg(ret, msgid2, 'R');
+		return 0;
+	} else {
+		sendMsg(ret, msgid2, 'E');
+		return -1;
+	}
 }
 
 void Server::run_server()
@@ -141,24 +165,25 @@ void Server::run_server()
 
 	std::cout << "RUN SERVER" << std::endl;
 	while (1 == 1) {
-		if (msgrcv(msgid,  &msg, sizeof(int), 0 , 0) == -1) {
+		if (msgrcv(msgid,  &msg, sizeof(message_t) - sizeof(long), 0 , 0) == -1) {
 			/* error handling */
 			std::cout << "Cant' receive message" << std::endl;
 		}
+
 		switch (msg.mType) {
 		case 'R':
-			std::cout << "Register " << (char) msg.mText << std::endl;
-			this->regVehicle(msg.mText);
+			regVehicle(msg.mText, msg.mPID);
 			break;
 
 		case 'N':
 		case 'W':
 		case 'S':
-		case 'O':
+		case 'E':
 			std::cout << "Move direction " << (char) msg.mType << std::endl;
 			break;
 		case 'T':
-			std::cout << "TODO: KILL Process" << std::endl;
+			kill(msg.mPID, SIGTERM);
+			registeredVehicles.erase(msg.mText);
 			break;
 		default:
 			break;
@@ -167,4 +192,3 @@ void Server::run_server()
 
 	return;
 }
-
