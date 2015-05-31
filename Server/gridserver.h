@@ -23,16 +23,23 @@ public:
 	Server(int width, int height);
 	void run_server();
 	void send_display(std::string message);
+	int getPID(char name);
 private:
-	int cellValue(int x, int y) const;
-	int sendMsg(int text, int msgid, long type);
-	int regVehicle(char name, int pid); 
-	void removeVehicle(char name);
-	int placeVehicle(char name, int pid);
-	std::string gridToString(std::vector<char> grid);
-	FILE* pipe;
 	int width;
 	int height;
+
+	int cellValue(int x, int y) const;
+	int sendMsg(int text, int msgid, long type);
+
+	int moveVehicle(char name, char direction);
+	int step(int x, int y, char direction);
+
 	std::map<char, int> registeredVehicles;
+	int regVehicle(char name, int pid); 
+	int placeVehicle(char name, int pid);
+	void removeVehicle(char name);
+
+	FILE* pipe;
 	std::vector<char> grid;
+	std::string gridToString(std::vector<char> grid);
 };

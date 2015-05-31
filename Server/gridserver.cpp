@@ -74,11 +74,11 @@ int main(int argc, char* argv[])
 			}
 			break;
 		case'?':
-			std::cout << "Case ?" << std::endl;
+			//std::cout << "Case ?" << std::endl;
 			print_usage();
 			break;
 		default:
-			std::cout << "Default Case" << std::endl;
+			//std::cout << "Default Case" << std::endl;
 			print_usage();
 			return -1;
 		}
@@ -113,7 +113,7 @@ int Server::sendMsg(int text, int msgid, long type)
 	msg.mType = type;
 	if (msgsnd(msgid, &msg, sizeof(msg) - sizeof(long) , 0) == -1) { //Nachricht in Message Queue schreiben
 		//return EXIT_FAILURE;
-		std::cout << errno << std::endl;
+		//std::cout << errno << std::endl;
 		return -1;
 	}
 	return 0;
@@ -124,11 +124,15 @@ int Server::placeVehicle(char name, int pid)
 {
 	if (registeredVehicles.count(name) == 0) {
 		registeredVehicles[name] = pid;
+		//	std::cout << "Registered Vehicle: " << name << "  PID: " << registeredVehicles[name] << std::endl;
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
 
-		for (unsigned int i = 0; i < grid.size(); i++) {
-			if (grid[i] == ' ') {
-				grid[i] = name;
-				return 0;
+				if (grid[cellValue(x, y)] == ' ') {
+					grid[cellValue(x, y)] = name;
+					int encoded=(1000*x+y);
+					return encoded;
+				}
 			}
 		}
 	}
@@ -137,9 +141,9 @@ int Server::placeVehicle(char name, int pid)
 
 int Server::regVehicle(char name, int pid)
 {
-	int ret = 0;
-	if ((ret = placeVehicle(name, pid) == 0)) {
-		std::cout << "Registered Vehicle: " << name << "  PID: " << registeredVehicles[name] << std::endl;
+	int ret = placeVehicle(name, pid);
+	if (ret != -1) {
+	//	std::cout << "Encoded Message: " << ret << std::endl;
 		sendMsg(ret, msgid2, 'R');
 		return 0;
 	} else {
@@ -157,8 +161,79 @@ void Server::removeVehicle(char name)
 			}
 		}
 	}
+	//std::cout << "Function removeVehicle() - Killing Vehicle " << name << " with PID: " << registeredVehicles[name] << std::endl;
+	kill(registeredVehicles[name], SIGTERM);
+	registeredVehicles.erase(name);
 	return;
 }
+
+typedef struct {
+	int x;
+	int y;
+} coordinates;
+
+int Server::step(int x, int y, char direction)
+{
+	char name = grid[cellValue(x, y)];
+	std::map<char, coordinates> directions;
+	directions['N'].y = -1;
+	directions['N'].x = 0;
+	directions['S'].y = 1;
+	directions['S'].x = 0;
+	directions['W'].y = 0;
+	directions['W'].x = -1;
+	directions['E'].y = 0;
+	directions['E'].x = 1;
+
+	//std::cout << "Vehicle " << name << " moving in direction " << direction << std::endl;
+
+	if (x + directions[direction].x < 0 || y + directions[direction].y < 0 || x + directions[direction].x >= width || y + directions[direction].y >= height) {
+		//std::cout << "Vehicle " << name << " crashed into Wall" << std::endl;
+		removeVehicle(name);
+		return 0;
+	}
+	grid[cellValue(x, y)] = ' ';
+
+	char tmp_field;
+	int destinationX = x + directions[direction].x;
+	int destinationY = y + directions[direction].y;
+
+	if ((tmp_field = grid[cellValue(destinationX, destinationY)]) == ' ') {
+		grid[cellValue(destinationX, destinationY)] = name;
+	} else {
+		//std::cout << "Vehicle " << name << " crashed into Vehicle " << tmp_field << std::endl;
+		removeVehicle(name);
+		removeVehicle(tmp_field);
+		return 0;
+	}
+	return 0;
+}
+
+int Server::moveVehicle(char name, char direction)
+{
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (grid[cellValue(x, y)] == name) {
+
+				step(x, y, direction);
+				/*if (direction == 'N') {
+					if ((tmp_field = grid[cellValue(x, y - 1)]) == ' ') {
+						grid[cellValue(x, y - 1)] = name;
+					} else {
+						std::cout << "Vehicle " << name << " crashed into Vehicle " << tmp_field << std::endl;
+						removeVehicle(name);
+						removeVehicle(tmp_field);
+						kill(registeredVehicles[name], SIGTERM);
+						kill(registeredVehicles[tmp_field], SIGTERM);
+					}
+				}*/
+				return 0;
+			}
+		}
+	}
+	return 0;
+}
+
 std::string Server::gridToString(std::vector<char> grid)
 {
 	std::string s;
@@ -205,7 +280,7 @@ void Server::run_server()
 		exit(EXIT_FAILURE);
 	}
 
-	std::cout << "RUN SERVER" << std::endl;
+//	std::cout << "RUN SERVER" << std::endl;
 	while (1 == 1) {
 		if (msgrcv(msgid,  &msg, sizeof(message_t) - sizeof(long), 0 , 0) == -1) {
 			/* error handling */
@@ -222,13 +297,11 @@ void Server::run_server()
 		case 'W':
 		case 'S':
 		case 'E':
+			moveVehicle(msg.mText, msg.mType);
 			send_display(gridToString(grid));
-			std::cout << "Move direction " << (char) msg.mType << std::endl;
 			break;
 		case 'T':
 			removeVehicle(msg.mText);
-			kill(msg.mPID, SIGTERM);
-			registeredVehicles.erase(msg.mText);
 			send_display(gridToString(grid));
 			break;
 		default:
@@ -238,5 +311,4 @@ void Server::run_server()
 
 	return;
 }
-
 
