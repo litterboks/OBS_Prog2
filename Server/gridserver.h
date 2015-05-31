@@ -2,6 +2,7 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <vector>
+#include <map>
 #include <string>
 
 #define MAX_DATA 255
@@ -11,10 +12,13 @@
 
 typedef struct {
 	long mType;
-	char mText[MAX_DATA];
+	int mText;
 } message_t;
 
+class Vehicle
+{
 
+};
 class Server
 {
 public:
@@ -22,8 +26,11 @@ public:
 	void run_server();
 	void send_display(std::string message);
 private:
+	int sendMsg(char text, int msgid, int type);
+	int regVehicle(char name); 
 	FILE* pipe;
 	int width;
 	int height;
 	std::vector<char> grid;
+	std::map<char, Vehicle*> vehicles;
 };

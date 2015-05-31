@@ -23,6 +23,8 @@ void signal_handler(int sig)
 		break;
 	case SIGINT:
 		msgctl(msgid, IPC_RMID, NULL);
+		msgctl(msgid2, IPC_RMID, NULL);
+		remove("../pipe");
 		exit(EXIT_SUCCESS);
 	case SIGQUIT:
 		break;
@@ -98,6 +100,26 @@ void Server::send_display(std::string message)
 	out_pipe << message;
 }
 
+int Server::regVehicle(char name)
+{
+	return 0;
+}
+
+int Server::sendMsg(char text, int msgid, int type)
+{
+	//Nachricht verschicken
+	message_t msg;  /* Buffer fuer Message */
+	msg.mText = text;
+	msg.mType = type;
+	if (msgsnd(msgid, &msg, sizeof(msg) - sizeof(long) , 0) == -1) { //Nachricht in Message Queue schreiben
+		//return EXIT_FAILURE;
+		std::cout << errno << std::endl;
+		return -1;
+	}
+	return 0;
+
+}
+
 void Server::run_server()
 {
 	message_t msg;	/* Buffer fuer Message */
@@ -109,18 +131,40 @@ void Server::run_server()
 		std::cout << "Errno: " << errno << " msgid: " << msgid << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	std::cout << "RUN SERVER" << std::endl;
 
+	if ((msgid2 = msgget(KEY2, PERM | IPC_CREAT | IPC_EXCL)) == -1) {
+		/* error handling */
+		std::cout << "Error creating message queue" << std::endl;
+		std::cout << "Errno: " << errno << " msgid: " << msgid << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	std::cout << "RUN SERVER" << std::endl;
 	while (1 == 1) {
-		if (msgrcv(msgid, &msg, sizeof(msg) - sizeof(long), 0 , 0) == -1) {
+		if (msgrcv(msgid,  &msg, sizeof(int), 0 , 0) == -1) {
 			/* error handling */
 			std::cout << "Cant' receive message" << std::endl;
 		}
-		std::cout << "Message: " << msg.mText << std::endl;
+		switch (msg.mType) {
+		case 'R':
+			std::cout << "Register " << (char) msg.mText << std::endl;
+			this->regVehicle(msg.mText);
+			break;
+
+		case 'N':
+		case 'W':
+		case 'S':
+		case 'O':
+			std::cout << "Move direction " << (char) msg.mType << std::endl;
+			break;
+		case 'T':
+			std::cout << "TODO: KILL Process" << std::endl;
+			break;
+		default:
+			break;
+		}
 	}
 
-	remove("../pipe");
 	return;
 }
-
 

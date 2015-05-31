@@ -18,6 +18,6 @@
 
 typedef struct
 {
-	int mType;
+	long mType;
 	int mText;
 } message_t;
