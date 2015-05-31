@@ -36,11 +36,16 @@ Server::Server(int width, int height)
 	this->width = width;
 	this->height = height;
 	grid.resize(width * height);
-
+	std::fill(grid.begin(), grid.end(), ' ');
 	int mkfifo(const char *path, mode_t mode);
 	if (mkfifo("../pipe", 0660) == -1) {
 		return;
 	}
+}
+
+int Server::cellValue(int x, int y) const
+{
+	return y * width + x;
 }
 
 int main(int argc, char* argv[])
@@ -118,17 +123,16 @@ int Server::sendMsg(int text, int msgid, long type)
 int Server::placeVehicle(char name, int pid)
 {
 	if (registeredVehicles.count(name) == 0) {
-		registeredVehicles[name]=pid;
+		registeredVehicles[name] = pid;
+
 		for (unsigned int i = 0; i < grid.size(); i++) {
 			if (grid[i] == ' ') {
 				grid[i] = name;
-				break;
+				return 0;
 			}
-			std::cout << "Not in Grid -> SUCCESS" << std::endl;
-			return 0;
 		}
 	}
-		return -1;
+	return -1;
 }
 
 int Server::regVehicle(char name, int pid)
@@ -142,6 +146,44 @@ int Server::regVehicle(char name, int pid)
 		sendMsg(ret, msgid2, 'E');
 		return -1;
 	}
+}
+
+void Server::removeVehicle(char name)
+{
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (grid[cellValue(x, y)] == name) {
+				grid[cellValue(x, y)] = ' ';
+			}
+		}
+	}
+	return;
+}
+std::string Server::gridToString(std::vector<char> grid)
+{
+	std::string s;
+	//Erste Reihe mit # füllen 1 mehr als Feld Breit
+	for (int i = 0; i <= width + 1; i++) {
+		s.push_back('#');
+	}
+	s.push_back('\n');
+
+	for (int y = 0; y < height; y++) {
+		s.push_back('#');
+		for (int x = 0; x < width; x++) {
+			s.push_back(grid[cellValue(x, y)]);
+		}
+		s.push_back('#');
+		s.push_back('\n');
+	}
+
+	//Letzte Reihe mit # füllen
+	for (int i = 0; i <= width + 1; i++) {
+		s.push_back('#');
+	}
+	s.push_back('\n');
+
+	return s;
 }
 
 void Server::run_server()
@@ -173,17 +215,21 @@ void Server::run_server()
 		switch (msg.mType) {
 		case 'R':
 			regVehicle(msg.mText, msg.mPID);
+			send_display(gridToString(grid));
 			break;
 
 		case 'N':
 		case 'W':
 		case 'S':
 		case 'E':
+			send_display(gridToString(grid));
 			std::cout << "Move direction " << (char) msg.mType << std::endl;
 			break;
 		case 'T':
+			removeVehicle(msg.mText);
 			kill(msg.mPID, SIGTERM);
 			registeredVehicles.erase(msg.mText);
+			send_display(gridToString(grid));
 			break;
 		default:
 			break;
@@ -192,3 +238,5 @@ void Server::run_server()
 
 	return;
 }
+
+
