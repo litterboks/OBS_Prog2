@@ -9,6 +9,7 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits>
 
 #define KEY 14049
 #define KEY2 14062	/* eindeutiger Key z.B. Matrikelnummer */
@@ -20,4 +21,5 @@ typedef struct
 {
 	long mType;
 	int mText;
+	int mPID;
 } message_t;

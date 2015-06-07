@@ -13,8 +13,8 @@
 void print_usage();
 void run_server();
 
-int msgid = -1;
-int msgid2 = -1;
+int read_msgid = -1;
+int write_msgid = -1;
 
 void signal_handler(int sig)
 {
@@ -22,8 +22,8 @@ void signal_handler(int sig)
 	case SIGHUP:
 		break;
 	case SIGINT:
-		msgctl(msgid, IPC_RMID, NULL);
-		msgctl(msgid2, IPC_RMID, NULL);
+		msgctl(read_msgid, IPC_RMID, NULL);
+		msgctl(write_msgid, IPC_RMID, NULL);
 		remove("../pipe");
 		exit(EXIT_SUCCESS);
 	case SIGQUIT:
@@ -98,22 +98,14 @@ void print_usage()
 	return;
 }
 
-void Server::send_display(std::string message)
-{
-	std::ofstream out_pipe;
-	out_pipe.open("../pipe");
-	out_pipe << message;
-}
 
 int Server::sendMsg(int text, int msgid, long type)
 {
 	//Nachricht verschicken
-	message_t msg;  /* Buffer fuer Message */
+	message_t msg; //Buffer für Message
 	msg.mText = text;
 	msg.mType = type;
-	if (msgsnd(msgid, &msg, sizeof(msg) - sizeof(long) , 0) == -1) { //Nachricht in Message Queue schreiben
-		//return EXIT_FAILURE;
-		//std::cout << errno << std::endl;
+	if (msgsnd(msgid, &msg, sizeof(msg) - sizeof(long) , 0) == -1) {
 		return -1;
 	}
 	return 0;
@@ -124,13 +116,12 @@ int Server::placeVehicle(char name, int pid)
 {
 	if (registeredVehicles.count(name) == 0) {
 		registeredVehicles[name] = pid;
-		//	std::cout << "Registered Vehicle: " << name << "  PID: " << registeredVehicles[name] << std::endl;
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 
 				if (grid[cellValue(x, y)] == ' ') {
 					grid[cellValue(x, y)] = name;
-					int encoded=(1000*x+y);
+					int encoded = (1000 * x + y);
 					return encoded;
 				}
 			}
@@ -143,11 +134,10 @@ int Server::regVehicle(char name, int pid)
 {
 	int ret = placeVehicle(name, pid);
 	if (ret != -1) {
-	//	std::cout << "Encoded Message: " << ret << std::endl;
-		sendMsg(ret, msgid2, 'R');
+		sendMsg(ret, w_msgid, 'R');
 		return 0;
 	} else {
-		sendMsg(ret, msgid2, 'E');
+		sendMsg(ret, w_msgid, 'E');
 		return -1;
 	}
 }
@@ -161,7 +151,6 @@ void Server::removeVehicle(char name)
 			}
 		}
 	}
-	//std::cout << "Function removeVehicle() - Killing Vehicle " << name << " with PID: " << registeredVehicles[name] << std::endl;
 	kill(registeredVehicles[name], SIGTERM);
 	registeredVehicles.erase(name);
 	return;
@@ -185,10 +174,7 @@ int Server::step(int x, int y, char direction)
 	directions['E'].y = 0;
 	directions['E'].x = 1;
 
-	//std::cout << "Vehicle " << name << " moving in direction " << direction << std::endl;
-
 	if (x + directions[direction].x < 0 || y + directions[direction].y < 0 || x + directions[direction].x >= width || y + directions[direction].y >= height) {
-		//std::cout << "Vehicle " << name << " crashed into Wall" << std::endl;
 		removeVehicle(name);
 		return 0;
 	}
@@ -201,7 +187,6 @@ int Server::step(int x, int y, char direction)
 	if ((tmp_field = grid[cellValue(destinationX, destinationY)]) == ' ') {
 		grid[cellValue(destinationX, destinationY)] = name;
 	} else {
-		//std::cout << "Vehicle " << name << " crashed into Vehicle " << tmp_field << std::endl;
 		removeVehicle(name);
 		removeVehicle(tmp_field);
 		return 0;
@@ -216,17 +201,6 @@ int Server::moveVehicle(char name, char direction)
 			if (grid[cellValue(x, y)] == name) {
 
 				step(x, y, direction);
-				/*if (direction == 'N') {
-					if ((tmp_field = grid[cellValue(x, y - 1)]) == ' ') {
-						grid[cellValue(x, y - 1)] = name;
-					} else {
-						std::cout << "Vehicle " << name << " crashed into Vehicle " << tmp_field << std::endl;
-						removeVehicle(name);
-						removeVehicle(tmp_field);
-						kill(registeredVehicles[name], SIGTERM);
-						kill(registeredVehicles[tmp_field], SIGTERM);
-					}
-				}*/
 				return 0;
 			}
 		}
@@ -261,28 +235,49 @@ std::string Server::gridToString(std::vector<char> grid)
 	return s;
 }
 
+void Server::initQueues()
+{
+	//Möglicherweise noch geöffnete queues schließen
+	msgctl(msgget(KEY, PERM), IPC_RMID, NULL);
+	msgctl(msgget(KEY2, PERM), IPC_RMID, NULL);
+
+	//Message Queues anlegen
+	if ((r_msgid = msgget(KEY, PERM | IPC_CREAT | IPC_EXCL)) == -1) {
+		/* error handling */
+		std::cout << "Error creating message queue" << std::endl;
+		std::cout << "Errno: " << errno << " msgid: " << r_msgid << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if ((w_msgid = msgget(KEY2, PERM | IPC_CREAT | IPC_EXCL)) == -1) {
+		/* error handling */
+		std::cout << "Error creating message queue" << std::endl;
+		std::cout << "Errno: " << errno << " msgid: " << w_msgid << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	return;
+}
+
+void Server::send_display(std::string message)
+{
+	std::ofstream out_pipe;
+	out_pipe.open("../pipe");
+	out_pipe << message;
+}
+
 void Server::run_server()
 {
-	message_t msg;	/* Buffer fuer Message */
 
-	/* Message Queue neu anlegen */
-	if ((msgid = msgget(KEY, PERM | IPC_CREAT | IPC_EXCL)) == -1) {
-		/* error handling */
-		std::cout << "Error creating message queue" << std::endl;
-		std::cout << "Errno: " << errno << " msgid: " << msgid << std::endl;
-		exit(EXIT_FAILURE);
-	}
-
-	if ((msgid2 = msgget(KEY2, PERM | IPC_CREAT | IPC_EXCL)) == -1) {
-		/* error handling */
-		std::cout << "Error creating message queue" << std::endl;
-		std::cout << "Errno: " << errno << " msgid: " << msgid << std::endl;
-		exit(EXIT_FAILURE);
-	}
+	//Buffer fuer Message
+	message_t msg;
+	//Queues erstellen
+	initQueues();
+	write_msgid = w_msgid;
+	read_msgid = r_msgid;
 
 //	std::cout << "RUN SERVER" << std::endl;
 	while (1 == 1) {
-		if (msgrcv(msgid,  &msg, sizeof(message_t) - sizeof(long), 0 , 0) == -1) {
+		if (msgrcv(r_msgid,  &msg, sizeof(message_t) - sizeof(long), 0 , 0) == -1) {
 			/* error handling */
 			std::cout << "Cant' receive message" << std::endl;
 		}
@@ -311,4 +306,3 @@ void Server::run_server()
 
 	return;
 }
-

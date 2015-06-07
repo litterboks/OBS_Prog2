@@ -12,9 +12,9 @@
 #define PERM 0660
 
 typedef struct {
-	long mType;
-	int mText;
-	int mPID;
+	long mType=0;
+	int mText=0;
+	int mPID=0;
 } message_t;
 
 class Server
@@ -25,19 +25,27 @@ public:
 	void send_display(std::string message);
 	int getPID(char name);
 private:
+	int r_msgid=-1;
+	int w_msgid=-1;
 	int width;
 	int height;
 
-	int cellValue(int x, int y) const;
-	int sendMsg(int text, int msgid, long type);
+	//Funktionen zum Senden
+	void initQueues();
+	int sendMsg(int text, int msgid, long type);	
 
-	int moveVehicle(char name, char direction);
-	int step(int x, int y, char direction);
-
+	//Vehiclespezifisch
 	std::map<char, int> registeredVehicles;
 	int regVehicle(char name, int pid); 
 	int placeVehicle(char name, int pid);
 	void removeVehicle(char name);
+
+	//Funktionen zum Bewegen
+	int moveVehicle(char name, char direction);
+	int step(int x, int y, char direction);
+
+	//Hilfsfunktion zum Berechnen von Koordinaten
+	int cellValue(int x, int y) const;
 
 	FILE* pipe;
 	std::vector<char> grid;

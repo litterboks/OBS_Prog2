@@ -1,9 +1,3 @@
-#include <iostream>
-#include <unistd.h>
-#include <signal.h>
-#include <fstream>
-#include <sys/msg.h>
-#include <stdlib.h>
 #include "griddisplay.h"
 
 void signal_handler(int sig)
@@ -16,27 +10,29 @@ void signal_handler(int sig)
 
 using namespace std;
 
-int Display::Griddisplay()
+int Display::printGrid()
 {
 	std::ifstream f;
 	f.open("../pipe");
+	if (f.is_open()) {
 
-	if (f.is_open() != true) {
-		cout << "Error with Signal" << endl;
-		return -1 ;
+		char c = f.get();
+		while (f.good()) {
+			std::cout << c;
+			c = f.get();
+		}
 	}
-	cout << f << endl;
 	return 0;
 }
 
 
 int main()
 {
-	Display d;
+	Display display;
 	(void) signal(SIGINT, signal_handler);
 
 	while (1 == 1) {
-		int x = d.Griddisplay();
+		int x = display.printGrid();
 		if (x == -1) {
 			return -1;
 		}
