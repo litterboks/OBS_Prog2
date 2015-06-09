@@ -1,12 +1,12 @@
 CC = g++
 CFLAGS = -Wall -Werror -pedantic -std=c++11
-EXECUTABLE = gridserver
+EXECUTABLE = vehicleclient
 
 ############################### 
 # Build
 ###############################
 
-all: gridserver.cpp
+all: vehicleclient.cpp
 	${CC} ${CFLAGS} -o ${EXECUTABLE} $^
 
 ############################### 

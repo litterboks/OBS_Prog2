@@ -1,12 +1,12 @@
 CC = g++
 CFLAGS = -Wall -Werror -pedantic -std=c++11
-EXECUTABLE = gridserver
+EXECUTABLE = griddisplay
 
 ############################### 
 # Build
 ###############################
 
-all: gridserver.cpp
+all: griddisplay.cpp
 	${CC} ${CFLAGS} -o ${EXECUTABLE} $^
 
 ############################### 
